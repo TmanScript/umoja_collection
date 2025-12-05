@@ -1,0 +1,7 @@
+{
+  "name": "Umoja Inventory Swap",
+  "description": "A comprehensive inventory management system for swapping devices between customers and inventory using Umoja API.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
