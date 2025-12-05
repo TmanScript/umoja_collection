@@ -38,17 +38,8 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, label = "Scan Device I
       
       // Delay slightly to ensure DOM element exists
       const timer = setTimeout(() => {
-        const html5QrCode = new Html5Qrcode(scannerId);
-        scannerRef.current = html5QrCode;
-
-        const config = { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0
-        };
-        
         // Support typical formats for Routers (Code 128) and others
-        const formats = [
+        const formatsToSupport = [
             Html5QrcodeSupportedFormats.QR_CODE,
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.CODE_39,
@@ -56,6 +47,20 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, label = "Scan Device I
             Html5QrcodeSupportedFormats.UPC_A
         ];
 
+        // Pass formats to constructor to enable 1D barcode detection
+        const html5QrCode = new Html5Qrcode(scannerId, { 
+            formatsToSupport: formatsToSupport,
+            verbose: false 
+        });
+        scannerRef.current = html5QrCode;
+
+        const config = { 
+          fps: 10, 
+          // Rectangular box better for barcodes
+          qrbox: { width: 300, height: 150 },
+          aspectRatio: 1.333333 // Standard 4:3 camera aspect
+        };
+        
         // Start scanning
         html5QrCode.start(
           { facingMode: "environment" }, 
@@ -116,18 +121,19 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, label = "Scan Device I
           
           {/* Custom Overlay for Visual Guide */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="w-64 h-48 border-2 border-cyan-400/80 rounded-lg relative">
+            {/* Rectangular guide for barcodes */}
+            <div className="w-72 h-40 border-2 border-cyan-400/80 rounded-lg relative shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
                 <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-cyan-400 -mt-1 -ml-1"></div>
                 <div className="absolute top-0 right-0 w-4 h-4 border-t-4 border-r-4 border-cyan-400 -mt-1 -mr-1"></div>
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-4 border-l-4 border-cyan-400 -mb-1 -ml-1"></div>
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-cyan-400 -mb-1 -mr-1"></div>
                 
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-red-500/50"></div>
+                <div className="absolute top-1/2 left-2 right-2 h-0.5 bg-red-500/50 animate-pulse"></div>
             </div>
           </div>
 
           {permissionError && (
-             <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-6 text-center">
+             <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white p-6 text-center z-10">
                 <p>{permissionError}</p>
              </div>
           )}
