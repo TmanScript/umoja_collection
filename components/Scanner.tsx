@@ -23,10 +23,16 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, label = "Scan Device I
     inputRef.current?.focus();
   }, []);
 
+  // Helper to format the barcode string (replace commas with hyphens)
+  const formatBarcode = (text: string) => {
+    return text.trim().replace(/,/g, '-');
+  };
+
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      onScan(inputValue.trim());
+      const formatted = formatBarcode(inputValue);
+      onScan(formatted);
       setInputValue('');
     }
   };
@@ -67,8 +73,12 @@ export const Scanner: React.FC<ScannerProps> = ({ onScan, label = "Scan Device I
           config,
           (decodedText) => {
             // Success callback
-            console.log("Scanned:", decodedText);
-            onScan(decodedText);
+            console.log("Scanned raw:", decodedText);
+            const formattedText = formatBarcode(decodedText);
+            console.log("Scanned formatted:", formattedText);
+            
+            onScan(formattedText);
+            
             // Stop scanning and close camera automatically on success
             html5QrCode.stop().then(() => {
                 html5QrCode.clear();
