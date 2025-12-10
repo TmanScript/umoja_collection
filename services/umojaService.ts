@@ -149,6 +149,30 @@ class UmojaService {
       }),
     });
   }
+
+  // Specialized method for Sales Statistics
+  // Fetches raw customer data with specific reporting credentials
+  async getSalesData(): Promise<any[]> {
+    // Specific token provided for this reporting task
+    const SALES_TOKEN = "NGQwNzQwZGE2NjFjYjRlYTQzMjM2NmM5MGZhZGUxOWU6MmE0ZDkzOGVkNTYyMjg5MmExNDdmMjZjMmVlNTI2MmI=";
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${SALES_TOKEN}`,
+    };
+
+    const response = await fetch(`${API_BASE_URL}/customers/customer`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Sales API Error ${response.status}: ${errorText}`);
+    }
+
+    const json = await response.json();
+    return Array.isArray(json) ? json : json.data || [];
+  }
 }
 
 export const umojaService = new UmojaService();
