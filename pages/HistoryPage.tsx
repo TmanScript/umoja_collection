@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { getSwapHistory, SwapHistoryRecord, getCollectionHistory, CollectionTransactionRecord } from '../services/supabaseClient';
 import { Link } from 'react-router-dom';
@@ -17,6 +18,8 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isGeneralViewer = adminId === 'GENERAL_VIEWER';
 
   // Fetch Swap History
   useEffect(() => {
@@ -123,6 +126,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                     <thead className="bg-gray-50">
                         <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        {isGeneralViewer && (
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                        )}
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Returned</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
@@ -133,11 +139,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                         {swapHistory.map((record, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(record.Date).toLocaleString()}
+                              {new Date(record.Date).toLocaleString()}
                             </td>
+                            {isGeneralViewer && (
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-pink-600">
+                                {record.Admin_Name}
+                              </td>
+                            )}
                             <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{record.Customer_Name}</div>
-                            <div className="text-xs text-gray-400 font-mono">{record.Customer_ID}</div>
+                              <div className="text-sm font-medium text-gray-900">{record.Customer_Name}</div>
+                              <div className="text-xs text-gray-400 font-mono">{record.Customer_ID}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 font-mono">
@@ -178,6 +189,9 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                     <thead className="bg-gray-50">
                         <tr>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        {isGeneralViewer && (
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
+                        )}
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Router</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SIM</th>
@@ -188,8 +202,13 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                         {collectionHistory.map((record, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(record.Date).toLocaleString()}
+                              {new Date(record.Date).toLocaleString()}
                             </td>
+                            {isGeneralViewer && (
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-cyan-600">
+                                {record.Agent}
+                              </td>
+                            )}
                             <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-gray-900">{record["Full Name"]}</div>
                             <div className="text-xs text-gray-400 font-mono">{record["Customer ID"] || '-'}</div>
