@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Customer, Device, SwapState } from '../types';
 import { umojaService } from '../services/umojaService';
@@ -14,6 +15,18 @@ interface SwapPageProps {
 }
 
 export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName, onOpenSettings }) => {
+  // Access Control Check
+  if (adminId === 'GENERAL_VIEWER') {
+      return (
+          <div className="max-w-2xl mx-auto py-12 text-center">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8">
+                  <h2 className="text-2xl font-bold text-yellow-800 mb-2">Access Restricted</h2>
+                  <p className="text-yellow-700">The General Admin account is read-only. You cannot perform device swaps.</p>
+              </div>
+          </div>
+      );
+  }
+
   // State for the wizard
   const [state, setState] = useState<SwapState>({
     step: 'select-customer',

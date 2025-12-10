@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { SwapPage } from './pages/SwapPage';
@@ -34,6 +35,8 @@ const AppContent: React.FC<{
   setShowSettings: (show: boolean) => void;
   hasToken: boolean;
 }> = ({ userName, adminId, handleLogout, setShowSettings, hasToken }) => {
+  const isGeneralViewer = adminId === 'GENERAL_VIEWER';
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Navigation Bar */}
@@ -56,10 +59,15 @@ const AppContent: React.FC<{
               </Link>
               <div className="hidden sm:flex sm:space-x-2 items-center">
                  <NavLink to="/">Dashboard</NavLink>
-                 <NavLink to="/swap">Swap Device</NavLink>
-                 <NavLink to="/collection">Device Collection</NavLink>
+                 {/* Only show operational links if NOT general viewer */}
+                 {!isGeneralViewer && (
+                   <>
+                     <NavLink to="/swap">Swap Device</NavLink>
+                     <NavLink to="/collection">Device Collection</NavLink>
+                   </>
+                 )}
                  <NavLink to="/stats">Statistics</NavLink>
-                 <NavLink to="/history">My History</NavLink>
+                 <NavLink to="/history">{isGeneralViewer ? 'Global History' : 'My History'}</NavLink>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -82,9 +90,9 @@ const AppContent: React.FC<{
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
          <Routes>
-           <Route path="/" element={<DashboardPage userName={userName} />} />
+           <Route path="/" element={<DashboardPage userName={userName} adminId={adminId} />} />
            <Route path="/swap" element={<SwapPage hasToken={hasToken} adminId={adminId} adminName={userName} onOpenSettings={() => setShowSettings(true)} />} />
-           <Route path="/collection" element={<CollectionPage hasToken={hasToken} adminName={userName} />} />
+           <Route path="/collection" element={<CollectionPage hasToken={hasToken} adminName={userName} adminId={adminId} />} />
            <Route path="/stats" element={<StatsPage />} />
            <Route path="/history" element={<HistoryPage adminId={adminId} adminName={userName} />} />
          </Routes>

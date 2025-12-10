@@ -18,9 +18,22 @@ interface LogEntry {
 interface CollectionPageProps {
   hasToken: boolean;
   adminName: string;
+  adminId?: string;
 }
 
-export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminName }) => {
+export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminName, adminId }) => {
+  // Access Control Check
+  if (adminId === 'GENERAL_VIEWER') {
+      return (
+          <div className="max-w-2xl mx-auto py-12 text-center">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8">
+                  <h2 className="text-2xl font-bold text-yellow-800 mb-2">Access Restricted</h2>
+                  <p className="text-yellow-700">The General Admin account is read-only. You cannot perform device collections.</p>
+              </div>
+          </div>
+      );
+  }
+
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   

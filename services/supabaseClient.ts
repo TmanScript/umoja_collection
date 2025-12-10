@@ -16,6 +16,16 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 export const verifyAdminLogin = async (username: string, password: string): Promise<{ success: boolean; name?: string; id?: string; error?: string }> => {
   try {
+    // 1. Check for General Read-Only Admin
+    if (username === 'admin' && password === 'admin') {
+      return { 
+        success: true, 
+        name: 'General Admin', 
+        id: 'GENERAL_VIEWER' 
+      };
+    }
+
+    // 2. Regular Database Auth
     // Query the 'Admin' table
     // We use limit(1) instead of single() to avoid "Cannot coerce..." errors if duplicates exist
     const { data: users, error } = await supabase
@@ -82,11 +92,16 @@ export const recordSwapTransaction = async (record: SwapHistoryRecord) => {
 
 export const getSwapHistory = async (adminId: string | number): Promise<SwapHistoryRecord[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('Swap_History')
-      .select('*')
-      .eq('admin_id', adminId)
-      .order('Date', { ascending: false });
+      .select('*');
+
+    // Only filter by ID if it is NOT the General Viewer
+    if (adminId !== 'GENERAL_VIEWER') {
+      query = query.eq('admin_id', adminId);
+    }
+
+    const { data, error } = await query.order('Date', { ascending: false });
 
     if (error) {
       throw error;
@@ -123,11 +138,16 @@ export const recordCollectionTransaction = async (record: CollectionTransactionR
 
 export const getCollectionHistory = async (agentName: string): Promise<CollectionTransactionRecord[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('Collection_History')
-      .select('*')
-      .eq('Agent', agentName)
-      .order('Date', { ascending: false });
+      .select('*');
+
+    // Only filter by Agent Name if it is NOT the General Admin
+    if (agentName !== 'General Admin') {
+      query = query.eq('Agent', agentName);
+    }
+
+    const { data, error } = await query.order('Date', { ascending: false });
 
     if (error) {
       throw error;
