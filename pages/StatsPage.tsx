@@ -118,7 +118,7 @@ export const StatsPage: React.FC = () => {
       const isPartner3 = pid === 3;
       // Approximate float comparison for 399.0000
       const isMrr399 = Math.abs(mrr - 399.0) < 0.01;
-      const isYear2025 = dateStr.includes("2025");
+      const isYear2025 = dateStr.includes("2025") || dateStr.includes("2026"); // Some entries might have late 2025 dates that spill into early 2026;
 
       return isPartner3 && isMrr399 && isYear2025;
     });
