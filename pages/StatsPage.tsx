@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { getAllCollectionHistory } from '../services/supabaseClient';
 import { umojaService } from '../services/umojaService';
@@ -69,7 +68,7 @@ export const StatsPage: React.FC = () => {
       
       if (p.includes('gauteng')) entry.Gauteng++;
       else if (p.includes('limpopo')) entry.Limpopo++;
-      else entry.Other++; // For collections, we mostly have GP/LP, but safe to have Other
+      else entry.Other++;
     });
 
     const chartData = Array.from(statsMap.values()).sort((a, b) => a.sortKey - b.sortKey);
@@ -83,8 +82,7 @@ export const StatsPage: React.FC = () => {
     // Requirements:
     // 1. partner_id = 3
     // 2. mrr_total = 399.0000
-    // 3. date_add contains "2025"
-    // 4. location_id mapping:
+    // 3. location_id mapping:
     //    Gauteng: 3, 5, 6, 7, 8, 9, 10
     //    Limpopo: 2, 11
     
@@ -94,25 +92,20 @@ export const StatsPage: React.FC = () => {
     const filtered = rawCustomers.filter((c: any) => {
         const pid = parseInt(c.partner_id, 10);
         const mrr = parseFloat(c.mrr_total);
-        const dateStr = c.date_add || '';
-        
-        // Exact match logic
-        const isPartner3 = pid === 3;
-        // Approximate float comparison for 399.0000
-        const isMrr399 = Math.abs(mrr - 399.0) < 0.01;
-        const isYear2025 = dateStr.includes('2025');
 
-        return isPartner3 && isMrr399 && isYear2025;
+        const isPartner3 = pid === 3;
+        const isMrr399 = Math.abs(mrr - 399.0) < 0.01;
+
+        return isPartner3 && isMrr399;
     });
 
-    setDebugMsg(`Loaded ${rawCustomers.length} raw, filtered to ${filtered.length} (2025, Partner 3, MRR 399).`);
+    setDebugMsg(`Loaded ${rawCustomers.length} raw, filtered to ${filtered.length} (Partner 3, MRR 399).`);
 
     const statsMap = new Map<string, { label: string, Gauteng: number, Limpopo: number, Other: number, sortKey: number }>();
 
     filtered.forEach((c: any) => {
         if (!c.date_add) return;
 
-        // date_add format: "2025-12-09"
         const date = new Date(c.date_add);
         if (isNaN(date.getTime())) return;
 
@@ -127,7 +120,6 @@ export const StatsPage: React.FC = () => {
 
         const entry = statsMap.get(key)!;
         
-        // Use location_id for mapping
         const locId = parseInt(c.location_id, 10);
 
         if (GAUTENG_IDS.includes(locId)) {
@@ -187,7 +179,7 @@ export const StatsPage: React.FC = () => {
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
             >
-                Sales Growth (2025)
+                Sales Growth
             </button>
         </div>
       </div>
@@ -208,7 +200,7 @@ export const StatsPage: React.FC = () => {
             <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
                 <div className="flex justify-between items-center mb-8">
                 <h3 className="text-lg font-bold text-gray-800">
-                    {activeTab === 'collection' ? 'Collections per Month' : 'New Sales (2025 - Partner 3)'}
+                    {activeTab === 'collection' ? 'Collections per Month' : 'New Sales (Partner 3)'}
                 </h3>
                 <div className="flex gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-2">
@@ -248,11 +240,9 @@ export const StatsPage: React.FC = () => {
                     {/* Bars */}
                     <div className="absolute inset-0 flex items-end justify-around px-4 pt-4 pb-0">
                     {data.map((item) => {
-                        // Calculate percentage heights relative to chartMax
                         const totalHeight = item.Gauteng + item.Limpopo + item.Other;
                         const heightPct = chartMax > 0 ? (totalHeight / chartMax) * 100 : 0;
                         
-                        // Internal distribution
                         const gpPct = totalHeight > 0 ? (item.Gauteng / totalHeight) * 100 : 0;
                         const lpPct = totalHeight > 0 ? (item.Limpopo / totalHeight) * 100 : 0;
                         const otherPct = totalHeight > 0 ? (item.Other / totalHeight) * 100 : 0;
@@ -265,7 +255,7 @@ export const StatsPage: React.FC = () => {
                                 className="w-full max-w-[40px] sm:max-w-[50px] relative flex flex-col-reverse"
                                 style={{ height: `${heightPct}%`, minHeight: '4px' }}
                             >
-                                {/* Tooltip - Moved outside overflow-hidden container */}
+                                {/* Tooltip */}
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-800 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-xl z-50">
                                     <div className="font-bold border-b border-gray-600 mb-1 pb-1 text-center">{item.label}</div>
                                     <div className="space-y-0.5">
@@ -292,7 +282,7 @@ export const StatsPage: React.FC = () => {
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
                                 </div>
 
-                                {/* The Bar Segments - This has the clipping */}
+                                {/* Bar Segments */}
                                 <div className="w-full h-full flex flex-col-reverse rounded-t-sm overflow-hidden shadow-sm hover:brightness-110 transition-all cursor-pointer">
                                      {item.Gauteng > 0 && (
                                         <div style={{ height: `${gpPct}%` }} className="bg-pink-500 w-full"></div>
