@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import { Device, Customer } from '../types';
 import { umojaService } from '../services/umojaService';
 import { recordCollectionTransaction } from '../services/supabaseClient';
@@ -188,9 +189,15 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
       setRouterItem(null);
       setSimItem(null);
       addLog('Collection transaction completed successfully.', 'success');
+      toast.success('Collection processed', {
+        description: [routerBarcode && `Router ${routerBarcode}`, simBarcode && `SIM ${simBarcode}`]
+          .filter(Boolean)
+          .join(' · '),
+      });
 
     } catch (err: any) {
       addLog('Transaction Failed', 'error', err.message);
+      toast.error('Collection failed', { description: err.message });
     } finally {
       setLoading(false);
     }

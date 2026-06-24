@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Customer, Device, SwapState } from '../types';
 import { umojaService } from '../services/umojaService';
 import { recordSwapTransaction } from '../services/supabaseClient';
@@ -183,7 +185,9 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
     
     // Critical Validation: Ensure we have the Admin ID for the database foreign key
     if (!adminId || adminId === 'undefined') {
-        alert("Session Error: Admin ID missing. Please refresh the page or log out and log in again.");
+        toast.error("Session Error: Admin ID missing.", {
+            description: "Please refresh the page or log out and log in again.",
+        });
         return;
     }
 
@@ -220,9 +224,11 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
             });
         }
         
-        // Success state - Show alert
-        alert(`Swap Successful!\nOld Device Returned: ${state.oldDevice.deviceId}\nNew Device Assigned: ${state.newDevice.deviceId}\n\nTransaction logged to history.`);
-        
+        // Success state - Show toast
+        toast.success('Swap completed successfully', {
+            description: `Returned ${state.oldDevice.deviceId} · Assigned ${state.newDevice.deviceId}`,
+        });
+
         // Reset Flow
         setState({
             step: 'select-customer',
@@ -263,6 +269,14 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
   };
 
   // -------- Renders --------
+
+  // Shared slide/fade for wizard step transitions.
+  const stepAnim = {
+    initial: { opacity: 0, x: 24 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -24 },
+    transition: { duration: 0.22, ease: 'easeOut' as const },
+  };
 
   const renderBreadcrumbs = () => (
     <div className="flex items-center text-sm mb-8 overflow-x-auto pb-2">
@@ -309,9 +323,10 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
         </div>
       )}
 
+      <AnimatePresence mode="wait">
       {/* View: Select Customer */}
       {state.step === 'select-customer' && (
-        <div className="max-w-2xl mx-auto">
+        <motion.div key="select-customer" {...stepAnim} className="max-w-2xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Find Customer</h2>
             <p className="text-gray-500 mb-6">Search by name, email, or customer ID to begin the swap process.</p>
@@ -352,12 +367,12 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
               )}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* View: Select Old Device */}
       {state.step === 'select-old-device' && state.selectedCustomer && (
-        <div className="max-w-2xl mx-auto">
+        <motion.div key="select-old-device" {...stepAnim} className="max-w-2xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
             <div className="flex justify-between items-start mb-6">
                 <div>
@@ -397,12 +412,12 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* View: Scan New Device */}
       {state.step === 'scan-new-device' && state.oldDevice && (
-        <div className="max-w-2xl mx-auto">
+        <motion.div key="scan-new-device" {...stepAnim} className="max-w-2xl mx-auto">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
              <div className="mb-6 pb-6 border-b border-gray-100">
                 <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
@@ -421,12 +436,12 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 <Button variant="secondary" onClick={() => setState(prev => ({...prev, step: 'select-old-device'}))}>Back</Button>
              </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* View: Confirm Swap */}
       {state.step === 'confirm' && state.oldDevice && state.newDevice && state.selectedCustomer && (
-        <div className="max-w-3xl mx-auto">
+        <motion.div key="confirm" {...stepAnim} className="max-w-3xl mx-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Swap Transaction</h2>
             
             <div className="grid md:grid-cols-2 gap-6 mb-8">
@@ -485,8 +500,9 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                     </Button>
                 </div>
             </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

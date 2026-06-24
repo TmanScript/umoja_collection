@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Toaster } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SwapPage } from './pages/SwapPage';
 import { LoginPage } from './pages/LoginPage';
 import { HistoryPage } from './pages/HistoryPage';
@@ -36,6 +38,7 @@ const AppContent: React.FC<{
   hasToken: boolean;
 }> = ({ userName, adminId, handleLogout, setShowSettings, hasToken }) => {
   const isGeneralViewer = adminId === 'GENERAL_VIEWER';
+  const location = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -89,13 +92,23 @@ const AppContent: React.FC<{
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-         <Routes>
-           <Route path="/" element={<DashboardPage userName={userName} adminId={adminId} />} />
-           <Route path="/swap" element={<SwapPage hasToken={hasToken} adminId={adminId} adminName={userName} onOpenSettings={() => setShowSettings(true)} />} />
-           <Route path="/collection" element={<CollectionPage hasToken={hasToken} adminName={userName} adminId={adminId} />} />
-           <Route path="/stats" element={<StatsPage />} />
-           <Route path="/history" element={<HistoryPage adminId={adminId} adminName={userName} />} />
-         </Routes>
+         <AnimatePresence mode="wait">
+           <motion.div
+             key={location.pathname}
+             initial={{ opacity: 0, y: 12 }}
+             animate={{ opacity: 1, y: 0 }}
+             exit={{ opacity: 0, y: -8 }}
+             transition={{ duration: 0.25, ease: 'easeOut' }}
+           >
+             <Routes location={location}>
+               <Route path="/" element={<DashboardPage userName={userName} adminId={adminId} />} />
+               <Route path="/swap" element={<SwapPage hasToken={hasToken} adminId={adminId} adminName={userName} onOpenSettings={() => setShowSettings(true)} />} />
+               <Route path="/collection" element={<CollectionPage hasToken={hasToken} adminName={userName} adminId={adminId} />} />
+               <Route path="/stats" element={<StatsPage />} />
+               <Route path="/history" element={<HistoryPage adminId={adminId} adminName={userName} />} />
+             </Routes>
+           </motion.div>
+         </AnimatePresence>
       </main>
     </div>
   );
@@ -164,29 +177,40 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
   };
 
+  // Toasts render above everything; top-center reads well on mobile.
+  const toaster = (
+    <Toaster position="top-center" richColors closeButton expand />
+  );
+
   if (authLoading) {
     return <div className="min-h-screen flex items-center justify-center text-pink-600">Loading...</div>;
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        {toaster}
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      </>
+    );
   }
 
   return (
     <Router>
-      <AppContent 
+      {toaster}
+      <AppContent
         userName={userName}
         adminId={adminId}
         handleLogout={handleLogout}
         setShowSettings={setShowSettings}
         hasToken={hasToken}
       />
-      
+
       {/* Settings Modal */}
       {showSettings && (
-        <SettingsModal 
-          onClose={() => setShowSettings(false)} 
-          onSave={handleSaveToken} 
+        <SettingsModal
+          onClose={() => setShowSettings(false)}
+          onSave={handleSaveToken}
         />
       )}
     </Router>

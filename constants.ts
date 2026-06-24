@@ -1,8 +1,9 @@
+import { ENV } from './env';
 
-export const API_BASE_URL = "https://portal.umoja.network/api/2.0/admin";
+export const API_BASE_URL = ENV.UMOJA_API_BASE_URL;
 
-// Hardcoded default token for "Always Connected" mode
-export const DEFAULT_TOKEN = "MWY3M2M4ODUzY2FiYzg3ZTI0MjIyOWE5NDU1NDg4MDE6MWU2MTM4NzAwMjA0MjlmNjM3NzRjYmYwZjU5ZGIxMTY=";
+// Default token for "Always Connected" mode, sourced from the environment.
+export const DEFAULT_TOKEN = ENV.UMOJA_DEFAULT_TOKEN;
 
 // Mock data for demonstration purposes if API fails or for initial state
 export const MOCK_CUSTOMERS = [

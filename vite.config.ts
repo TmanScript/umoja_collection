@@ -1,24 +1,20 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-      },
-      plugins: [react()],
-      "base":"/umoja_collection/",
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
+// Environment variables are read via import.meta.env (see env.ts). Vite exposes
+// any variable prefixed with VITE_ to the client automatically, so no manual
+// `define` block is needed.
+export default defineConfig({
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
+  plugins: [react()],
+  base: '/umoja_collection/',
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
 });

@@ -1,4 +1,17 @@
 import React, { useEffect, useState } from "react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import { getAllCollectionHistory } from "../services/supabaseClient";
 import { umojaService } from "../services/umojaService";
 
@@ -188,14 +201,14 @@ export const StatsPage: React.FC = () => {
   const totalOther = data.reduce((acc, curr) => acc + curr.Other, 0);
   const totalAll = totalGauteng + totalLimpopo + totalOther;
 
-  // Scaling
-  const maxValue =
-    data.length > 0
-      ? Math.max(...data.map((d) => d.Gauteng + d.Limpopo + d.Other))
-      : 10;
+  // Brand palette shared by the bar chart and donut.
+  const COLORS = { Gauteng: "#ec4899", Limpopo: "#06b6d4", Other: "#cbd5e1" };
 
-  // Chart Height Scaling (add 20% buffer)
-  const chartMax = Math.ceil(maxValue * 1.2);
+  const donutData = [
+    { name: "Gauteng", value: totalGauteng, color: COLORS.Gauteng },
+    { name: "Limpopo", value: totalLimpopo, color: COLORS.Limpopo },
+    { name: "Other", value: totalOther, color: COLORS.Other },
+  ].filter((d) => d.value > 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -248,159 +261,134 @@ export const StatsPage: React.FC = () => {
         </div>
       ) : (
         <>
-          {/* CHART CONTAINER */}
-          <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-lg font-bold text-gray-800">
+          {/* CHARTS */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Monthly stacked bar chart */}
+            <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-gray-200 lg:col-span-2">
+              <h3 className="text-lg font-bold text-gray-800 mb-6">
                 {activeTab === "collection"
                   ? "Collections per Month"
                   : "New Sales (2025 - Partner 3)"}
               </h3>
-              <div className="flex gap-4 text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-pink-500 rounded"></div>
-                  <span>Gauteng</span>
+
+              {data.length === 0 ? (
+                <div className="h-72 flex flex-col items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300 text-gray-400">
+                  <p>No matching data found.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-cyan-500 rounded"></div>
-                  <span>Limpopo</span>
-                </div>
-                {totalOther > 0 && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-gray-400 rounded"></div>
-                    <span>Other</span>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={320}>
+                  <BarChart
+                    data={data}
+                    margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="gpGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f472b6" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                      <linearGradient id="lpGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#22d3ee" />
+                        <stop offset="100%" stopColor="#06b6d4" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="#f1f5f9"
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 12, fill: "#6b7280" }}
+                      tickLine={false}
+                      axisLine={{ stroke: "#e5e7eb" }}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 12, fill: "#9ca3af" }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={36}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(236,72,153,0.06)" }}
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: "1px solid #f1f5f9",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.08)",
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                    <Bar
+                      dataKey="Gauteng"
+                      stackId="a"
+                      fill="url(#gpGrad)"
+                      maxBarSize={56}
+                      animationDuration={700}
+                    />
+                    <Bar
+                      dataKey="Limpopo"
+                      stackId="a"
+                      fill="url(#lpGrad)"
+                      radius={totalOther > 0 ? 0 : [6, 6, 0, 0]}
+                      maxBarSize={56}
+                      animationDuration={700}
+                    />
+                    {totalOther > 0 && (
+                      <Bar
+                        dataKey="Other"
+                        stackId="a"
+                        fill={COLORS.Other}
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={56}
+                        animationDuration={700}
+                      />
+                    )}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
-            {data.length === 0 ? (
-              <div className="h-64 flex flex-col items-center justify-center bg-gray-50 rounded border border-dashed border-gray-300 text-gray-400">
-                <p>No matching data found.</p>
-              </div>
-            ) : (
-              <div className="relative h-80 w-full border-b border-l border-gray-200 bg-gray-50/50">
-                {/* Horizontal Grid Lines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                  {[1, 0.75, 0.5, 0.25, 0].map((tick) => (
-                    <div
-                      key={tick}
-                      className="w-full border-t border-gray-200 relative h-0"
+            {/* Regional split donut */}
+            <div className="bg-white p-5 sm:p-8 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+              <h3 className="text-lg font-bold text-gray-800">Regional Split</h3>
+              <p className="text-xs text-gray-400 mb-2">
+                Share of total{" "}
+                {activeTab === "collection" ? "collections" : "sales"}
+              </p>
+              {totalAll === 0 ? (
+                <div className="flex-1 flex items-center justify-center text-gray-400 text-sm py-10">
+                  No data
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={58}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      stroke="none"
+                      animationDuration={700}
                     >
-                      <span className="absolute -left-8 -top-2 text-xs text-gray-400 w-6 text-right">
-                        {Math.round(chartMax * tick)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Bars */}
-                <div className="absolute inset-0 flex items-end justify-around px-4 pt-4 pb-0">
-                  {data.map((item) => {
-                    // Calculate percentage heights relative to chartMax
-                    const totalHeight =
-                      item.Gauteng + item.Limpopo + item.Other;
-                    const heightPct =
-                      chartMax > 0 ? (totalHeight / chartMax) * 100 : 0;
-
-                    // Internal distribution
-                    const gpPct =
-                      totalHeight > 0 ? (item.Gauteng / totalHeight) * 100 : 0;
-                    const lpPct =
-                      totalHeight > 0 ? (item.Limpopo / totalHeight) * 100 : 0;
-                    const otherPct =
-                      totalHeight > 0 ? (item.Other / totalHeight) * 100 : 0;
-
-                    return (
-                      <div
-                        key={item.label}
-                        className="flex flex-col items-center w-16 sm:w-24 h-full justify-end group relative z-10 hover:z-20"
-                      >
-                        {/* Bar Wrapper */}
-                        <div
-                          className="w-full max-w-[40px] sm:max-w-[50px] relative flex flex-col-reverse"
-                          style={{ height: `${heightPct}%`, minHeight: "4px" }}
-                        >
-                          {/* Tooltip - Moved outside overflow-hidden container */}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-gray-800 text-white text-[10px] p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-xl z-50">
-                            <div className="font-bold border-b border-gray-600 mb-1 pb-1 text-center">
-                              {item.label}
-                            </div>
-                            <div className="space-y-0.5">
-                              <div className="flex justify-between items-center">
-                                <span className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
-                                  GP
-                                </span>
-                                <span className="font-mono">
-                                  {item.Gauteng}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-                                  LP
-                                </span>
-                                <span className="font-mono">
-                                  {item.Limpopo}
-                                </span>
-                              </div>
-                              {item.Other > 0 && (
-                                <div className="flex justify-between items-center">
-                                  <span className="flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                    Other
-                                  </span>
-                                  <span className="font-mono">
-                                    {item.Other}
-                                  </span>
-                                </div>
-                              )}
-                              <div className="border-t border-gray-600 mt-1 pt-1 flex justify-between font-bold text-gray-200">
-                                <span>Total</span>
-                                <span>{totalHeight}</span>
-                              </div>
-                            </div>
-                            {/* Arrow */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                          </div>
-
-                          {/* The Bar Segments - This has the clipping */}
-                          <div className="w-full h-full flex flex-col-reverse rounded-t-sm overflow-hidden shadow-sm hover:brightness-110 transition-all cursor-pointer">
-                            {item.Gauteng > 0 && (
-                              <div
-                                style={{ height: `${gpPct}%` }}
-                                className="bg-pink-500 w-full"
-                              ></div>
-                            )}
-                            {item.Limpopo > 0 && (
-                              <div
-                                style={{ height: `${lpPct}%` }}
-                                className="bg-cyan-500 w-full"
-                              ></div>
-                            )}
-                            {item.Other > 0 && (
-                              <div
-                                style={{ height: `${otherPct}%` }}
-                                className="bg-gray-400 w-full"
-                              ></div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* X-Axis Label */}
-                        <div className="mt-2 text-xs font-medium text-gray-600 text-center leading-tight">
-                          {item.label.split(" ")[0]}
-                          <span className="block text-[10px] text-gray-400">
-                            {item.label.split(" ")[1]}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+                      {donutData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: "1px solid #f1f5f9",
+                        fontSize: 12,
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
 
           {/* Stats Cards */}

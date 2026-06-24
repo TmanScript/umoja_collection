@@ -1,4 +1,5 @@
 import { API_BASE_URL, DEFAULT_TOKEN } from '../constants';
+import { ENV } from '../env';
 import { Customer, Device } from '../types';
 
 class UmojaService {
@@ -153,9 +154,9 @@ class UmojaService {
   // Specialized method for Sales Statistics
   // Fetches raw customer data with specific reporting credentials
   async getSalesData(): Promise<any[]> {
-    // Specific token provided for this reporting task
-    const SALES_TOKEN = "NGQwNzQwZGE2NjFjYjRlYTQzMjM2NmM5MGZhZGUxOWU6MmE0ZDkzOGVkNTYyMjg5MmExNDdmMjZjMmVlNTI2MmI=";
-    
+    // Specific token used for this reporting task, sourced from the environment.
+    const SALES_TOKEN = ENV.UMOJA_SALES_TOKEN;
+
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Basic ${SALES_TOKEN}`,

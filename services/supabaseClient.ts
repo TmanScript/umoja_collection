@@ -1,11 +1,11 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { ENV } from '../env';
 
-const SUPABASE_URL = 'https://suqmfxgohxxcyuorpelo.supabase.co';
-// Using the provided service role key as requested for this admin tool
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1cW1meGdvaHh4Y3l1b3JwZWxvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDc1NDI0NiwiZXhwIjoyMDgwMzMwMjQ2fQ.yO530DU8-gWPCY4uoTqiQeO55T_UxKsFy8PXKXWj56I';
+const SUPABASE_URL = ENV.SUPABASE_URL;
+const SUPABASE_KEY = ENV.SUPABASE_KEY;
 
-// Disable session persistence to avoid issues in sandboxed environments or when using Service Role key client-side
+// Disable session persistence to avoid issues in sandboxed environments.
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: false,
