@@ -151,6 +151,21 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
             await umojaService.disableCustomer(routerItem.customer_id);
           }
           addLog(`Customer (ID: ${routerItem.customer_id}) status set to DISABLED.`, 'success');
+
+          // Delete the customer's last invoice as part of the collection.
+          // Non-fatal: if this fails, the collection still completes.
+          if (hasToken) {
+            try {
+              const deletedInvoice = await umojaService.deleteLastInvoiceForCustomer(routerItem.customer_id);
+              if (deletedInvoice) {
+                addLog(`Last invoice (${deletedInvoice}) for customer ${routerItem.customer_id} deleted.`, 'success');
+              } else {
+                addLog(`No invoices found to delete for customer ${routerItem.customer_id}.`, 'info');
+              }
+            } catch (invoiceErr: any) {
+              addLog(`Could not delete last invoice for customer ${routerItem.customer_id}: ${invoiceErr.message}`, 'error');
+            }
+          }
         } else {
           addLog(`No customer linked to Router ${routerItem.deviceId}.`, 'info');
         }

@@ -27,7 +27,11 @@ class UmojaService {
       throw new Error(`API Error ${response.status}: ${errorText}`);
     }
 
-    return response.json();
+    // Some endpoints (e.g. DELETE) return "204 No Content" with an empty body.
+    // Calling response.json() on an empty body throws, so guard against it.
+    if (response.status === 204) return null;
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   }
 
   async getCustomers(): Promise<Customer[]> {
@@ -149,6 +153,42 @@ class UmojaService {
         status: 'disabled'
       }),
     });
+  }
+
+  // Fetch all invoices belonging to a specific customer.
+  // Uses Splynx's main_attributes filter to avoid pulling the entire invoice ledger.
+  async getCustomerInvoices(customerId: string): Promise<any[]> {
+    if (!this.token) throw new Error("No token provided");
+    // GET https://portal.umoja.network/api/2.0/admin/finance/invoices
+    const query = `?main_attributes[customer_id]=${encodeURIComponent(customerId)}`;
+    const response = await this.fetch(`/finance/invoices${query}`);
+    const rawData = Array.isArray(response) ? response : response?.data || [];
+    // Defensive: filter by customer_id in case the server ignores the query filter.
+    return rawData.filter((inv: any) => String(inv.customer_id) === String(customerId));
+  }
+
+  // Delete a single invoice by its internal ID.
+  async deleteInvoice(id: string | number): Promise<void> {
+    if (!this.token) throw new Error("Token required for transaction");
+    // DELETE https://portal.umoja.network/api/2.0/admin/finance/invoices/{id}
+    await this.fetch(`/finance/invoices/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Delete the customer's most recent (last) invoice.
+  // Returns the invoice number/id that was deleted, or null if the customer has none.
+  async deleteLastInvoiceForCustomer(customerId: string): Promise<string | null> {
+    const invoices = await this.getCustomerInvoices(customerId);
+    if (!invoices || invoices.length === 0) return null;
+
+    // The "last" invoice is the most recently created one, i.e. the highest ID.
+    const lastInvoice = invoices.reduce((latest: any, current: any) =>
+      Number(current.id) > Number(latest.id) ? current : latest
+    );
+
+    await this.deleteInvoice(lastInvoice.id);
+    return String(lastInvoice.number || lastInvoice.id);
   }
 
   // Specialized method for Sales Statistics
