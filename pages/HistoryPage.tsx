@@ -132,6 +132,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Returned</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         </tr>
                     </thead>
@@ -159,6 +160,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                             <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 font-mono">
                                 {record.New_Device}
                             </span>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                              <span className="line-clamp-2" title={record.Reason || '-'}>
+                                {record.Reason || '-'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                             {record.status === 'success' ? (
@@ -195,6 +201,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Router</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SIM</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Province</th>
                         </tr>
                     </thead>
@@ -226,6 +233,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ adminId, adminName }) 
                                         {record.SIM}
                                     </span>
                                 ) : <span className="text-gray-300">-</span>}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
+                              <span className="line-clamp-2" title={record.Reason || '-'}>
+                                {record.Reason || '-'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                             {record.Province}

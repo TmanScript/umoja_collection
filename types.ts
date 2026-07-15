@@ -27,6 +27,7 @@ export interface SwapState {
   selectedCustomer: Customer | null;
   oldDevice: Device | null;
   newDevice: Device | null;
+  reason: string;
 }
 
 export interface ApiConfig {

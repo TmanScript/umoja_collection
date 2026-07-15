@@ -26,14 +26,13 @@ export const verifyAdminLogin = async (username: string, password: string): Prom
     }
 
     // 2. Regular Database Auth
-    // Query the 'Admin' table
-    // We use limit(1) instead of single() to avoid "Cannot coerce..." errors if duplicates exist
+    // Use a narrow SECURITY DEFINER RPC instead of exposing direct reads of the
+    // Admin table to the browser anon key.
     const { data: users, error } = await supabase
-      .from('Admin')
-      .select('*') 
-      .eq('phone', username) // Authenticating using phone number column
-      .eq('password', password)
-      .limit(1);
+      .rpc('verify_admin_login', {
+        p_phone: username,
+        p_password: password,
+      });
 
     if (error) {
       console.error("Login verification failed:", error.message);
@@ -44,7 +43,7 @@ export const verifyAdminLogin = async (username: string, password: string): Prom
       return { success: false, error: "Invalid phone number or password." };
     }
 
-    const data = users[0];
+    const data = Array.isArray(users) ? users[0] : users;
 
     // Explicitly use 'admin_id' as requested by the user.
     // This ensures we get the correct column for Foreign Key relationships.
@@ -75,6 +74,7 @@ export interface SwapHistoryRecord {
   Admin_Name: string; // The name of the admin performing the swap
   Old_Device: string;
   New_Device: string;
+  Reason: string;
   Date: string;
   status: string; // 'success' or error message
 }
@@ -118,6 +118,7 @@ export interface CollectionTransactionRecord {
   "Full Name": string;
   "Barcode": string;
   "SIM": string;
+  "Reason": string;
   "Agent": string;
   "Province": string;
   "Date": string;

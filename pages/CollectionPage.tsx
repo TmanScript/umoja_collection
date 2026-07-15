@@ -7,6 +7,7 @@ import { recordCollectionTransaction } from '../services/supabaseClient';
 import { MOCK_INVENTORY, MOCK_CUSTOMERS } from '../constants';
 import { Button } from '../components/Button';
 import { Scanner } from '../components/Scanner';
+import { TRANSACTION_REASON_MAX_LENGTH, validateTransactionReason, withTransactionReason } from '../utils/transactionReason';
 
 interface LogEntry {
   id: string;
@@ -37,6 +38,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
 
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [collectionReason, setCollectionReason] = useState('');
   
   // Staging state for the paired items
   const [routerItem, setRouterItem] = useState<Device | null>(null);
@@ -112,6 +114,14 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
 
   const processCollection = async () => {
     if (!routerItem && !simItem) return;
+
+    const reasonValidation = validateTransactionReason(collectionReason);
+    if (!reasonValidation.valid) {
+      addLog('Collection reason required', 'error', reasonValidation.error);
+      toast.error('Collection reason required', { description: reasonValidation.error });
+      return;
+    }
+
     setLoading(true);
 
     // Variables for History Logging
@@ -189,7 +199,7 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
           province = 'Limpopo';
       }
 
-      await recordCollectionTransaction({
+      await recordCollectionTransaction(withTransactionReason({
           "Customer ID": customerId || "N/A",
           "Full Name": customerName,
           "Barcode": routerBarcode,
@@ -197,12 +207,13 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
           "Agent": agent,
           "Province": province,
           "Date": new Date().toISOString()
-      });
+      }, reasonValidation.value));
       addLog('Transaction logged to Collection History.', 'success');
 
       // Clear form on success
       setRouterItem(null);
       setSimItem(null);
+      setCollectionReason('');
       addLog('Collection transaction completed successfully.', 'success');
       toast.success('Collection processed', {
         description: [routerBarcode && `Router ${routerBarcode}`, simBarcode && `SIM ${simBarcode}`]
@@ -217,6 +228,8 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
       setLoading(false);
     }
   };
+
+  const reasonValidation = validateTransactionReason(collectionReason);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -288,18 +301,40 @@ export const CollectionPage: React.FC<CollectionPageProps> = ({ hasToken, adminN
           </div>
 
           {/* Action Bar */}
-          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 flex justify-between items-center">
-             <div className="text-sm text-gray-500">
-                {(!routerItem && !simItem) ? 'Scan at least one item to proceed.' : 'Ready to process collection.'}
+          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 space-y-4">
+             <div>
+                <label htmlFor="collection-reason" className="block text-sm font-semibold text-gray-800 mb-2">
+                  Reason for collection <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="collection-reason"
+                  value={collectionReason}
+                  onChange={(e) => setCollectionReason(e.target.value)}
+                  maxLength={TRANSACTION_REASON_MAX_LENGTH}
+                  rows={4}
+                  className="block w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all resize-y bg-white"
+                  placeholder="Example: Customer cancellation, non-payment collection, damaged return..."
+                />
+                <div className="mt-2 flex justify-between gap-4 text-xs">
+                  <p className={collectionReason && !reasonValidation.valid ? 'text-red-600' : 'text-gray-500'}>
+                    {collectionReason && !reasonValidation.valid ? reasonValidation.error : 'This reason will be saved with the collection history.'}
+                  </p>
+                  <p className="text-gray-400">{collectionReason.length}/{TRANSACTION_REASON_MAX_LENGTH}</p>
+                </div>
              </div>
-             <Button 
-                onClick={processCollection} 
-                disabled={(!routerItem && !simItem) || loading}
-                isLoading={loading}
-                className="w-48 shadow-lg shadow-pink-200"
-             >
-                Confirm Collection
-             </Button>
+             <div className="flex justify-between items-center gap-4">
+               <div className="text-sm text-gray-500">
+                  {(!routerItem && !simItem) ? 'Scan at least one item to proceed.' : 'Ready to process collection.'}
+               </div>
+               <Button 
+                  onClick={processCollection} 
+                  disabled={(!routerItem && !simItem) || !reasonValidation.valid || loading}
+                  isLoading={loading}
+                  className="w-48 shadow-lg shadow-pink-200"
+               >
+                  Confirm Collection
+               </Button>
+             </div>
           </div>
         </div>
 

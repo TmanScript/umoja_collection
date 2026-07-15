@@ -8,6 +8,7 @@ import { recordSwapTransaction } from '../services/supabaseClient';
 import { MOCK_CUSTOMERS, MOCK_INVENTORY } from '../constants';
 import { Button } from '../components/Button';
 import { Scanner } from '../components/Scanner';
+import { TRANSACTION_REASON_MAX_LENGTH, validateTransactionReason, withTransactionReason } from '../utils/transactionReason';
 
 interface SwapPageProps {
   hasToken: boolean;
@@ -35,6 +36,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
     selectedCustomer: null,
     oldDevice: null,
     newDevice: null,
+    reason: '',
   });
 
   // Data Loading States
@@ -95,7 +97,14 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
         const owned = inventory.filter(d => d.customer_id === customer.id && d.status === 'assigned');
         
         setCustomerDevices(owned);
-        setState(prev => ({ ...prev, selectedCustomer: customer, step: 'select-old-device' }));
+        setState(prev => ({
+            ...prev,
+            selectedCustomer: customer,
+            oldDevice: null,
+            newDevice: null,
+            reason: '',
+            step: 'select-old-device',
+        }));
     } catch (err: any) {
         setError("Could not fetch customer inventory");
     } finally {
@@ -106,7 +115,13 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
   // -------- Step 2: Old Device Selection Logic --------
 
   const selectOldDevice = (device: Device) => {
-    setState(prev => ({ ...prev, oldDevice: device, step: 'scan-new-device' }));
+    setState(prev => ({
+        ...prev,
+        oldDevice: device,
+        newDevice: null,
+        reason: '',
+        step: 'scan-new-device',
+    }));
   };
 
   // -------- Step 3: New Device Scanning Logic --------
@@ -150,7 +165,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
             throw new Error(`Device ${device.deviceId} is marked as defective.`);
         }
 
-        setState(prev => ({ ...prev, newDevice: device, step: 'confirm' }));
+        setState(prev => ({ ...prev, newDevice: device, reason: '', step: 'confirm' }));
 
     } catch (err: any) {
         setError(err.message);
@@ -168,6 +183,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 Admin_Name: adminName,
                 Old_Device: state.oldDevice.barcode || state.oldDevice.deviceId, 
                 New_Device: scannedId, // Log the scanned input that caused the error
+                Reason: 'Validation failed before swap confirmation',
                 Date: new Date().toISOString(),
                 status: err.message // e.g. "Device X is already assigned..."
             }).catch(dbErr => console.error("Failed to log validation error to history:", dbErr));
@@ -182,6 +198,13 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
 
   const executeSwap = async () => {
     if (!state.oldDevice || !state.newDevice || !state.selectedCustomer) return;
+
+    const reasonValidation = validateTransactionReason(state.reason);
+    if (!reasonValidation.valid) {
+        setError(reasonValidation.error);
+        toast.error('Swap reason required', { description: reasonValidation.error });
+        return;
+    }
     
     // Critical Validation: Ensure we have the Admin ID for the database foreign key
     if (!adminId || adminId === 'undefined') {
@@ -212,7 +235,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
             await umojaService.assignDevice(state.newDevice.id, custId);
 
             // 3. Record History in Supabase (Success)
-            await recordSwapTransaction({
+            await recordSwapTransaction(withTransactionReason({
                 Customer_ID: custId,
                 Customer_Name: `${state.selectedCustomer.first_name || ''} ${state.selectedCustomer.last_name || ''}`.trim() || (state.selectedCustomer.name || 'Unknown'),
                 admin_id: finalAdminId, 
@@ -221,7 +244,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 New_Device: state.newDevice.barcode || state.newDevice.deviceId, 
                 Date: new Date().toISOString(),
                 status: 'success'
-            });
+            }, reasonValidation.value));
         }
         
         // Success state - Show toast
@@ -235,6 +258,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
             selectedCustomer: null,
             oldDevice: null,
             newDevice: null,
+            reason: '',
         });
         setSearchTerm('');
         setSearchResults([]);
@@ -243,7 +267,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
     } catch (err: any) {
         // Attempt to log the failure to database
         try {
-            await recordSwapTransaction({
+            await recordSwapTransaction(withTransactionReason({
                 Customer_ID: state.selectedCustomer.customer_Id || state.selectedCustomer.id,
                 Customer_Name: `${state.selectedCustomer.first_name || ''} ${state.selectedCustomer.last_name || ''}`.trim() || (state.selectedCustomer.name || 'Unknown'),
                 admin_id: finalAdminId, 
@@ -252,7 +276,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 New_Device: state.newDevice.barcode || state.newDevice.deviceId, 
                 Date: new Date().toISOString(),
                 status: err.message || 'Unknown Error'
-            });
+            }, reasonValidation.value));
         } catch (logErr) {
             console.error("Failed to log failure record to DB", logErr);
         }
@@ -301,6 +325,8 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
       </div>
     </div>
   );
+
+  const reasonValidation = validateTransactionReason(state.reason);
 
   return (
     <div>
@@ -379,7 +405,13 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                     <h2 className="text-2xl font-bold text-gray-900">Select Device to Return</h2>
                     <p className="text-gray-500">Which device is {state.selectedCustomer.first_name || state.selectedCustomer.name} returning?</p>
                 </div>
-                <Button variant="secondary" onClick={() => setState(prev => ({...prev, step: 'select-customer'}))}>Change Customer</Button>
+                <Button variant="secondary" onClick={() => setState(prev => ({
+                    ...prev,
+                    oldDevice: null,
+                    newDevice: null,
+                    reason: '',
+                    step: 'select-customer',
+                }))}>Change Customer</Button>
             </div>
 
             {customerDevices.length === 0 ? (
@@ -433,7 +465,12 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
              {loading && <p className="text-center text-pink-600 mt-4 animate-pulse">Verifying inventory...</p>}
              
              <div className="mt-6 pt-6 border-t border-gray-100 flex justify-between">
-                <Button variant="secondary" onClick={() => setState(prev => ({...prev, step: 'select-old-device'}))}>Back</Button>
+                <Button variant="secondary" onClick={() => setState(prev => ({
+                    ...prev,
+                    newDevice: null,
+                    reason: '',
+                    step: 'select-old-device',
+                }))}>Back</Button>
              </div>
           </div>
         </motion.div>
@@ -491,11 +528,37 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 </div>
             </div>
 
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+                <label htmlFor="swap-reason" className="block text-sm font-semibold text-gray-800 mb-2">
+                    Reason for swap <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                    id="swap-reason"
+                    value={state.reason}
+                    onChange={(e) => setState(prev => ({ ...prev, reason: e.target.value }))}
+                    maxLength={TRANSACTION_REASON_MAX_LENGTH}
+                    rows={4}
+                    className="block w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-all resize-y"
+                    placeholder="Example: Faulty router, customer upgrade, damaged CPE..."
+                />
+                <div className="mt-2 flex justify-between gap-4 text-xs">
+                    <p className={state.reason && !reasonValidation.valid ? 'text-red-600' : 'text-gray-500'}>
+                        {state.reason && !reasonValidation.valid ? reasonValidation.error : 'This reason will be saved with the swap history.'}
+                    </p>
+                    <p className="text-gray-400">{state.reason.length}/{TRANSACTION_REASON_MAX_LENGTH}</p>
+                </div>
+            </div>
+
             <div className="flex justify-between items-center bg-gray-50 p-6 rounded-xl">
-                <Button variant="secondary" onClick={() => setState(prev => ({...prev, step: 'scan-new-device'}))}>Back</Button>
+                <Button variant="secondary" onClick={() => setState(prev => ({
+                    ...prev,
+                    newDevice: null,
+                    reason: '',
+                    step: 'scan-new-device',
+                }))}>Back</Button>
                 <div className="flex gap-4">
                      {!hasToken && <p className="text-xs text-orange-500 self-center max-w-[200px] text-right">Running in demo mode (simulated API calls).</p>}
-                     <Button onClick={executeSwap} isLoading={loading} className="w-48 shadow-lg shadow-pink-200">
+                     <Button onClick={executeSwap} disabled={!reasonValidation.valid} isLoading={loading} className="w-48 shadow-lg shadow-pink-200">
                         Confirm Swap
                     </Button>
                 </div>
