@@ -75,8 +75,30 @@ export interface SwapHistoryRecord {
   Old_Device: string;
   New_Device: string;
   Reason: string;
+  Province?: string;
   Date: string;
   status: string; // 'success' or error message
+}
+
+export interface OperationalMonthlyStatsRecord {
+  transaction_type: 'swap' | 'collection' | string;
+  month_label: string;
+  sort_key: number;
+  province: 'Gauteng' | 'Limpopo' | 'Other' | string;
+  total: number;
+}
+
+export interface OperationalDrilldownRecord {
+  transaction_type: 'swap' | 'collection' | string;
+  occurred_at: string;
+  province: 'Gauteng' | 'Limpopo' | string;
+  customer_name: string | null;
+  customer_id: string | null;
+  primary_device: string | null;
+  secondary_device: string | null;
+  reason: string | null;
+  agent: string | null;
+  status: string | null;
 }
 
 export const recordSwapTransaction = async (record: SwapHistoryRecord) => {
@@ -109,6 +131,42 @@ export const getSwapHistory = async (adminId: string | number): Promise<SwapHist
     return data || [];
   } catch (error: any) {
     console.error("Error fetching history:", error.message);
+    throw error;
+  }
+};
+
+export const getOperationalMonthlyStats = async (): Promise<OperationalMonthlyStatsRecord[]> => {
+  try {
+    const { data, error } = await supabase.rpc('get_operational_monthly_stats');
+
+    if (error) {
+      throw error;
+    }
+    return data || [];
+  } catch (error: any) {
+    console.error("Error fetching operational monthly stats:", error.message);
+    throw error;
+  }
+};
+
+export const getOperationalDrilldownRecords = async (
+  transactionType: 'swap' | 'collection',
+  sortKey: number,
+  province: 'Gauteng' | 'Limpopo',
+): Promise<OperationalDrilldownRecord[]> => {
+  try {
+    const { data, error } = await supabase.rpc('get_operational_drilldown_records', {
+      p_transaction_type: transactionType,
+      p_month_sort_key: sortKey,
+      p_province: province,
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data || [];
+  } catch (error: any) {
+    console.error("Error fetching operational drilldown records:", error.message);
     throw error;
   }
 };
@@ -156,24 +214,6 @@ export const getCollectionHistory = async (agentName: string): Promise<Collectio
     return data || [];
   } catch (error: any) {
     console.error("Error fetching collection history:", error.message);
-    throw error;
-  }
-};
-
-// New function to fetch ALL collection history for statistics
-export const getAllCollectionHistory = async (): Promise<CollectionTransactionRecord[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('Collection_History')
-      .select('*')
-      .order('Date', { ascending: true }); // Ordered by date for easier chart processing
-
-    if (error) {
-      throw error;
-    }
-    return data || [];
-  } catch (error: any) {
-    console.error("Error fetching all collection history:", error.message);
     throw error;
   }
 };

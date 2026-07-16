@@ -7,6 +7,11 @@ export interface Customer {
   email?: string;
   phone?: string;
   customer_Id?: string; // Handling potential inconsistency in API naming
+  location_id?: string | number;
+  locationId?: string | number;
+  location_Id?: string | number;
+  Province?: string;
+  province?: string;
 }
 
 export interface Device {

@@ -9,6 +9,7 @@ import { MOCK_CUSTOMERS, MOCK_INVENTORY } from '../constants';
 import { Button } from '../components/Button';
 import { Scanner } from '../components/Scanner';
 import { TRANSACTION_REASON_MAX_LENGTH, validateTransactionReason, withTransactionReason } from '../utils/transactionReason';
+import { normalizeProvince, provinceForAgent, provinceForLocationId } from '../utils/operationalStats';
 
 interface SwapPageProps {
   hasToken: boolean;
@@ -48,6 +49,16 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
   // Search States
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
+
+  const getCustomerProvince = (customer: Customer) => {
+    const directProvince = normalizeProvince(customer.Province || customer.province);
+    if (directProvince !== 'Other') return directProvince;
+
+    const locationProvince = provinceForLocationId(customer.location_id || customer.locationId || customer.location_Id);
+    if (locationProvince !== 'Other') return locationProvince;
+
+    return provinceForAgent(adminName);
+  };
 
   // -------- Step 1: Customer Selection Logic --------
 
@@ -184,6 +195,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 Old_Device: state.oldDevice.barcode || state.oldDevice.deviceId, 
                 New_Device: scannedId, // Log the scanned input that caused the error
                 Reason: 'Validation failed before swap confirmation',
+                Province: getCustomerProvince(state.selectedCustomer),
                 Date: new Date().toISOString(),
                 status: err.message // e.g. "Device X is already assigned..."
             }).catch(dbErr => console.error("Failed to log validation error to history:", dbErr));
@@ -242,6 +254,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 Admin_Name: adminName,
                 Old_Device: state.oldDevice.barcode || state.oldDevice.deviceId, 
                 New_Device: state.newDevice.barcode || state.newDevice.deviceId, 
+                Province: getCustomerProvince(state.selectedCustomer),
                 Date: new Date().toISOString(),
                 status: 'success'
             }, reasonValidation.value));
@@ -274,6 +287,7 @@ export const SwapPage: React.FC<SwapPageProps> = ({ hasToken, adminId, adminName
                 Admin_Name: adminName,
                 Old_Device: state.oldDevice.barcode || state.oldDevice.deviceId, 
                 New_Device: state.newDevice.barcode || state.newDevice.deviceId, 
+                Province: getCustomerProvince(state.selectedCustomer),
                 Date: new Date().toISOString(),
                 status: err.message || 'Unknown Error'
             }, reasonValidation.value));
